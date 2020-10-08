@@ -163,9 +163,15 @@ def get_top_five_naive_bayes_words(model, dictionary):
 
     Returns: A list of the top five most indicative words in sorted order with the most indicative first
     """
-    ids = np.argsort(model['log_theta_0'] - model['log_theta_1'])[:5]
-    reverse_dictionary = {i: word for word, i in dictionary.items()}
-    return [reverse_dictionary[i] for i in ids]
+
+    result = []
+    id_list = np.argsort(model['log_theta_0'] - model['log_theta_1'])[:5]
+
+    for word, id in dictionary.items():
+        if id in id_list:
+            result.append(word)
+
+    return result
 
 
 def compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, radius_to_consider):
@@ -184,16 +190,17 @@ def compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, 
     Returns:
         The best radius which maximizes SVM accuracy.
     """
-    tuple_best_radius = None
+    first_radius = radius_to_consider.pop(0)
+    svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, val_matrix, first_radius)
+    svm_accuracy = np.mean(svm_predictions == val_labels)
+
+    tuple_best_radius = (svm_accuracy, first_radius)
 
     for radius in radius_to_consider:
         svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, val_matrix, radius)
         svm_accuracy = np.mean(svm_predictions == val_labels)
-        if tuple_best_radius is None:
-            tuple_best_radius = (svm_accuracy, radius)
-        else:
-            actual_radius = (svm_accuracy, radius)
-            tuple_best_radius = max(tuple_best_radius, actual_radius)
+        actual_tuple = (svm_accuracy, radius)
+        if tuple_best_radius[0] < svm_accuracy: tuple_best_radius = actual_tuple
 
     accuracy, radius = tuple_best_radius
     return radius
@@ -227,23 +234,23 @@ def main():
 
     print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
 
-    top_5_words = get_top_five_naive_bayes_words(naive_bayes_model, dictionary)
-
-    print('The top 5 indicative words for Naive Bayes are: ', top_5_words)
-
-    util.write_json('spam_top_indicative_words', top_5_words)
-
-    optimal_radius = compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, [0.01, 0.1, 1, 10])
-
-    util.write_json('spam_optimal_radius', optimal_radius)
-
-    print('The optimal SVM radius was {}'.format(optimal_radius))
-
-    svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, test_matrix, optimal_radius)
-
-    svm_accuracy = np.mean(svm_predictions == test_labels)
-
-    print('The SVM model had an accuracy of {} on the testing set'.format(svm_accuracy, optimal_radius))
+    # top_5_words = get_top_five_naive_bayes_words(naive_bayes_model, dictionary)
+    #
+    # print('The top 5 indicative words for Naive Bayes are: ', top_5_words)
+    #
+    # util.write_json('spam_top_indicative_words', top_5_words)
+    #
+    # optimal_radius = compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, [0.01, 0.1, 1, 10])
+    #
+    # util.write_json('spam_optimal_radius', optimal_radius)
+    #
+    # print('The optimal SVM radius was {}'.format(optimal_radius))
+    #
+    # svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, test_matrix, optimal_radius)
+    #
+    # svm_accuracy = np.mean(svm_predictions == test_labels)
+    #
+    # print('The SVM model had an accuracy of {} on the testing set'.format(svm_accuracy, optimal_radius))
 
 
 if __name__ == "__main__":
