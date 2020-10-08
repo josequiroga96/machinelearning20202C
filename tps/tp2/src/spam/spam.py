@@ -2,6 +2,8 @@ import numpy as np
 import tps.tp2.src.spam.util as util
 import tps.tp2.src.spam.svm as svm
 
+# Trabajo Practico N2
+# Alumnos: Tomas Shilton, Jose Quiroga
 
 def get_words(message):
     """Get the normalized list of words from a message string.
